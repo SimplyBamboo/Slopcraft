@@ -329,7 +329,7 @@ export default class PlayerEntity extends EntityLiving {
             if (Keyboard.isKeyDown("Space")) {
                 jumping = true;
             }
-            if (Keyboard.isKeyDown(this.minecraft.settings.keySprinting)) {
+            if (Keyboard.isKeyDown(this.minecraft.settings.keySprinting) || this.minecraft.settings.autoSprint) {
                 if (this.moveForward > 0 && !this.isSneaking() && !this.sprinting && this.motionX !== 0 && this.motionZ !== 0) {
                     this.sprinting = true;
 

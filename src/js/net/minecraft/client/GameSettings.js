@@ -17,6 +17,7 @@ export default class GameSettings {
         this.sensitivity = 100;
         this.viewDistance = 4;
         this.debugOverlay = false;
+        this.autoSprint = false;
         this.serverAddress = 'server.labystudio.de';
     }
 

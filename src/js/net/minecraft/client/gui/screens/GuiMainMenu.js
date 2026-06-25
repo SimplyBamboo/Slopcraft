@@ -29,13 +29,10 @@ export default class GuiMainMenu extends GuiScreen {
         this.buttonList.push(new GuiButton("Multiplayer", this.width / 2 - 100, y + 24, 200, 20, () => {
             this.minecraft.displayScreen(new GuiDirectConnect(this));
         }));
-        this.buttonList.push(new GuiButton("SlopCraft Realms", this.width / 2 - 100, y + 24 * 2, 200, 20, () => {
-
-        }).setEnabled(false));
-        this.buttonList.push(new GuiButton("Options...", this.width / 2 - 100, y + 72 + 12, 98, 20, () => {
+        this.buttonList.push(new GuiButton("Options...", this.width / 2 - 100, y + 48, 98, 20, () => {
             this.minecraft.displayScreen(new GuiOptions(this));
         }));
-        this.buttonList.push(new GuiButton("Quit Game", this.width / 2 + 2, y + 72 + 12, 98, 20, () => {
+        this.buttonList.push(new GuiButton("Quit Game", this.width / 2 + 2, y + 48, 98, 20, () => {
             this.minecraft.stop();
         }));
 
@@ -85,8 +82,7 @@ export default class GuiMainMenu extends GuiScreen {
     }
 
     drawSplash(stack) {
-        let f = 1.8 - Math.abs(Math.sin((new Date().getTime() % 1000) / 1000.0 * Math.PI * 2.0) * 0.1);
-        f = f * 100.0 / (this.getStringWidth(stack, this.splashText) + 32);
+        let f = 100.0 / (this.getStringWidth(stack, this.splashText) + 32);
 
         stack.save();
         stack.translate((this.width / 2 + 90), 70.0, 0.0);
