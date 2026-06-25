@@ -22,6 +22,11 @@ export default class ChunkSection {
         this.boundingBox.max.y = y * ChunkSection.SIZE + ChunkSection.SIZE;
         this.boundingBox.max.z = z * ChunkSection.SIZE + ChunkSection.SIZE;
 
+        this.tightBoundingBox = new THREE.Box3();
+        this.tightBoundingBox.min.set(0, 0, 0);
+        this.tightBoundingBox.max.set(0, 0, 0);
+        this.hasTightBounds = false;
+
         this.group = new THREE.Object3D();
         this.group.position.x = this.x * ChunkSection.SIZE;
         this.group.position.y = this.y * ChunkSection.SIZE;
@@ -29,34 +34,91 @@ export default class ChunkSection {
         this.group.updateMatrix();
         this.group.matrixAutoUpdate = false;
         this.isModified = true;
+        this.isDirty = true;
 
         this.blocks = [];
         this.blocksData = [];
         this.blockLight = [];
         this.skyLight = [];
         this.empty = true;
+
+        this.minY = ChunkSection.SIZE;
+        this.maxY = -1;
     }
 
     render() {
 
     }
 
+    recalcBounds() {
+        this.minY = ChunkSection.SIZE;
+        this.maxY = -1;
+        this.empty = true;
+
+        for (let x = 0; x < ChunkSection.SIZE; x++) {
+            for (let z = 0; z < ChunkSection.SIZE; z++) {
+                for (let y = 0; y < ChunkSection.SIZE; y++) {
+                    let index = y << 8 | z << 4 | x;
+                    let typeId = index in this.blocks ? this.blocks[index] : 0;
+                    if (typeId !== 0) {
+                        this.empty = false;
+                        if (y < this.minY) this.minY = y;
+                        if (y > this.maxY) this.maxY = y;
+                    }
+                }
+            }
+        }
+
+        this.updateTightBounds();
+    }
+
+    updateTightBounds() {
+        if (this.empty) {
+            this.hasTightBounds = false;
+            this.tightBoundingBox.min.set(
+                this.x * ChunkSection.SIZE,
+                this.y * ChunkSection.SIZE,
+                this.z * ChunkSection.SIZE
+            );
+            this.tightBoundingBox.max.set(
+                this.x * ChunkSection.SIZE + ChunkSection.SIZE,
+                this.y * ChunkSection.SIZE + ChunkSection.SIZE,
+                this.z * ChunkSection.SIZE + ChunkSection.SIZE
+            );
+        } else {
+            this.hasTightBounds = true;
+            this.tightBoundingBox.min.set(
+                this.x * ChunkSection.SIZE,
+                this.y * ChunkSection.SIZE + this.minY,
+                this.z * ChunkSection.SIZE
+            );
+            this.tightBoundingBox.max.set(
+                this.x * ChunkSection.SIZE + ChunkSection.SIZE,
+                this.y * ChunkSection.SIZE + this.maxY + 1,
+                this.z * ChunkSection.SIZE + ChunkSection.SIZE
+            );
+        }
+    }
+
     rebuild(renderer) {
         this.isModified = false;
+        this.isDirty = false;
         this.group.clear();
+
+        this.recalcBounds();
+
+        if (this.empty) return;
 
         let ambientOcclusion = this.world.minecraft.settings.ambientOcclusion;
         let tessellator = renderer.blockRenderer.tessellator;
 
-        // Two render phases for solid and translucent
         for (let i = 0; i < 2; i++) {
             let isTranslucentRenderPhase = i === 1;
 
-            // Start drawing chunk section
             tessellator.startDrawing();
 
             for (let x = 0; x < ChunkSection.SIZE; x++) {
-                for (let y = 0; y < ChunkSection.SIZE; y++) {
+                for (let y = this.minY; y <= this.maxY; y++) {
                     for (let z = 0; z < ChunkSection.SIZE; z++) {
                         let typeId = this.getBlockAt(x, y, z);
 
@@ -76,7 +138,6 @@ export default class ChunkSection {
                 }
             }
 
-            // Draw chunk section
             tessellator.draw(this.group);
         }
     }
@@ -95,8 +156,11 @@ export default class ChunkSection {
         let index = y << 8 | z << 4 | x;
         this.blocks[index] = typeId;
         this.isModified = true;
+        this.isDirty = true;
 
-        if (this.empty && typeId !== 0) {
+        if (typeId !== 0) {
+            if (y < this.minY) this.minY = y;
+            if (y > this.maxY) this.maxY = y;
             this.empty = false;
         }
     }

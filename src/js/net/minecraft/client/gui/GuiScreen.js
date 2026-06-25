@@ -13,7 +13,7 @@ export default class GuiScreen extends Gui {
         this.minecraft = minecraft;
         this.width = width;
         this.height = height;
-        this.textureBackground = this.getTexture("gui/background.png");
+        this.textureBackground = null;
 
         this.init();
     }
@@ -95,11 +95,47 @@ export default class GuiScreen extends Gui {
 
     drawDefaultBackground(stack) {
         if (this.minecraft.isInGame()) {
-            // Render transparent background
             this.drawRect(stack, 0, 0, this.width, this.height, 'black', 0.6);
         } else {
-            // Render dirt background
-            this.drawBackground(stack, this.textureBackground, this.width, this.height);
+            this.drawProceduralDirtBackground(stack);
         }
+    }
+
+    drawProceduralDirtBackground(stack) {
+        stack.save();
+
+        let tileW = 16;
+        let tileH = 16;
+        let cols = Math.ceil(this.width / tileW) + 1;
+        let rows = Math.ceil(this.height / tileH) + 1;
+
+        let canvas = document.createElement('canvas');
+        canvas.width = tileW;
+        canvas.height = tileH;
+        let ctx = canvas.getContext('2d');
+        let imgData = ctx.createImageData(tileW, tileH);
+        let d = imgData.data;
+        let seed = 42;
+        for (let py = 0; py < tileH; py++) {
+            for (let px = 0; px < tileW; px++) {
+                let n = Math.sin(px * 12.9898 + py * 78.233 + seed) * 43758.5453;
+                n = n - Math.floor(n);
+                let v = 80 + n * 40;
+                let idx = (py * tileW + px) * 4;
+                d[idx] = Math.floor(v * 0.85);
+                d[idx + 1] = Math.floor(v * 0.65);
+                d[idx + 2] = Math.floor(v * 0.4);
+                d[idx + 3] = 255;
+            }
+        }
+        ctx.putImageData(imgData, 0, 0);
+
+        let pattern = stack.createPattern(canvas, "repeat");
+        stack.filter = "brightness(28%)";
+        stack.fillStyle = pattern;
+        stack.fillRect(0, 0, this.width, this.height);
+        stack.filter = "none";
+
+        stack.restore();
     }
 }

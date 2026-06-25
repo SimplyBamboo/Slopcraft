@@ -572,8 +572,8 @@ export default class WorldRenderer {
                 for (let y in chunk.sections) {
                     let chunkSection = chunk.sections[y];
 
-                    // Is in camera view check
-                    if (this.frustum.intersectsBox(chunkSection.boundingBox) && !chunkSection.isEmpty()) {
+                    let cullBox = chunkSection.hasTightBounds ? chunkSection.tightBoundingBox : chunkSection.boundingBox;
+                    if (this.frustum.intersectsBox(cullBox) && !chunkSection.isEmpty()) {
                         // Make section visible
                         chunkSection.group.visible = true;
 

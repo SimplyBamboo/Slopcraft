@@ -57,11 +57,32 @@ export default class GuiButton extends Gui {
     }
 
     drawButton(stack, enabled, mouseOver, x, y, width, height) {
-        let textureGui = this.getTexture("gui/gui.png");
-        let spriteY = 66 + (enabled ? (mouseOver ? 20 : 0) : -20);
+        stack.save();
 
-        this.drawSprite(stack, textureGui, 0, spriteY, width / 2, 20, x, y, width / 2, height);
-        this.drawSprite(stack, textureGui, 200 - width / 2, spriteY, width / 2, 20, x + width / 2, y, width / 2, height);
+        let r, g, b;
+        if (!enabled) {
+            r = 60; g = 60; b = 60;
+        } else if (mouseOver) {
+            r = 100; g = 140; b = 200;
+        } else {
+            r = 70; g = 85; b = 140;
+        }
+
+        stack.fillStyle = `rgb(${Math.floor(r * 0.5)},${Math.floor(g * 0.5)},${Math.floor(b * 0.5)})`;
+        stack.fillRect(x, y, width, height);
+
+        stack.fillStyle = `rgb(${Math.floor(r * 0.8)},${Math.floor(g * 0.8)},${Math.floor(b * 0.8)})`;
+        stack.fillRect(x + 1, y + 1, width - 2, height - 2);
+
+        stack.fillStyle = `rgb(${r},${g},${b})`;
+        stack.fillRect(x + 2, y + 2, width - 4, height - 4);
+
+        if (enabled) {
+            stack.fillStyle = `rgba(255,255,255,0.15)`;
+            stack.fillRect(x + 2, y + 2, width - 4, Math.floor(height / 2) - 2);
+        }
+
+        stack.restore();
     }
 
     setEnabled(enabled) {

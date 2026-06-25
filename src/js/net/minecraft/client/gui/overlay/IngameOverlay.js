@@ -19,30 +19,22 @@ export default class IngameOverlay extends Gui {
         this.chatOverlay = new ChatOverlay(minecraft);
         this.playerListOverlay = new PlayerListOverlay(minecraft, this);
 
-        this.textureCrosshair = minecraft.resources["gui/icons.png"];
-        this.textureHotbar = minecraft.resources["gui/gui.png"];
-
         this.ticksRendered = 0;
     }
 
     render(stack, mouseX, mouseY, partialTicks) {
-        // Render crosshair
         if (this.minecraft.hasInGameFocus()) {
             this.renderCrosshair(stack, this.window.width / 2, this.window.height / 2)
         }
 
-        // Render hotbar
         this.renderHotbar(stack, this.window.width / 2 - 91, this.window.height - 22);
 
-        // Render chat canvas
         stack.drawImage(this.window.canvasChat, 0, 0);
 
-        // Render debug canvas on stack
         if (this.minecraft.settings.debugOverlay) {
             stack.drawImage(this.window.canvasDebug, 0, 0);
         }
 
-        // Render player list
         if (Keyboard.isKeyDown(this.minecraft.settings.keyPlayerList) && !this.minecraft.isSingleplayer()) {
             this.playerListOverlay.renderPlayerList(stack, this.window.width);
         }
@@ -51,27 +43,20 @@ export default class IngameOverlay extends Gui {
     onTick() {
         this.chatOverlay.onTick();
 
-        // Render debug overlay on tick
         if (this.minecraft.settings.debugOverlay) {
             let stack = this.window.canvasDebug.getContext('2d');
 
-            // Render debug overlay each tick if the player is moving
             if (this.ticksRendered % 10 === 0) {
-                // Clear debug canvas
                 stack.clearRect(0, 0, this.window.width, this.window.height);
-
-                // Render debug information
                 this.renderLeftDebugOverlay(stack);
                 this.renderRightDebugOverlay(stack);
             } else if (this.minecraft.player.isMoving()) {
-                // Render debug information
                 this.renderLeftDebugOverlay(stack, [5, 6, 7, 8]);
             }
 
             this.ticksRendered++;
         }
 
-        // Render chat on tick if dirty
         if (this.chatOverlay.isDirty()) {
             let stack = this.window.canvasChat.getContext('2d');
             stack.clearRect(0, 0, this.window.width, this.window.height);
@@ -81,34 +66,75 @@ export default class IngameOverlay extends Gui {
 
     renderCrosshair(stack, x, y) {
         let size = 15;
-        this.drawSprite(stack, this.textureCrosshair, 0, 0, 15, 15, x - size / 2, y - size / 2, size, size, 0.6);
+        let half = Math.floor(size / 2);
+        let thickness = 2;
+
+        stack.save();
+        stack.globalAlpha = 0.7;
+
+        stack.fillStyle = '#000000';
+        stack.fillRect(x - half - 1, y - Math.floor(thickness / 2), size + 2, thickness);
+        stack.fillRect(x - Math.floor(thickness / 2), y - half - 1, thickness, size + 2);
+
+        stack.fillStyle = '#ffffff';
+        stack.fillRect(x - half, y - Math.floor(thickness / 2), size, thickness);
+        stack.fillRect(x - Math.floor(thickness / 2), y - half, thickness, size);
+
+        stack.restore();
     }
 
     renderHotbar(stack, x, y) {
-        // Render background
-        this.drawSprite(stack, this.textureHotbar, 0, 0, 200, 22, x, y, 200, 22)
-        this.drawSprite(
-            stack,
-            this.textureHotbar,
-            0, 22,
-            24, 24,
-            x + this.minecraft.player.inventory.selectedSlotIndex * 20 - 1, y - 1,
-            24, 24
-        )
+        let slotSize = 20;
+        let barWidth = 9 * slotSize;
+        let barHeight = 22;
 
-        // To make the items darker
-        let brightness = this.minecraft.isPaused() ? 0.5 : 1; // TODO find a better solution
+        stack.save();
+
+        stack.fillStyle = '#1e1e1e';
+        stack.fillRect(x - 1, y - 1, barWidth + 2, barHeight + 2);
+
+        stack.fillStyle = '#2a2a2a';
+        stack.fillRect(x, y, barWidth, barHeight);
+
+        for (let i = 0; i < 9; i++) {
+            let slotX = x + i * slotSize;
+
+            if (i === this.minecraft.player.inventory.selectedSlotIndex) {
+                stack.fillStyle = '#555555';
+                stack.fillRect(slotX - 1, y - 1, slotSize + 2, barHeight + 2);
+                stack.fillStyle = '#888888';
+                stack.fillRect(slotX, y, slotSize, barHeight);
+            } else {
+                stack.fillStyle = '#3a3a3a';
+                stack.fillRect(slotX, y, slotSize, barHeight);
+            }
+
+            stack.fillStyle = '#666666';
+            stack.fillRect(slotX, y, slotSize, 1);
+            stack.fillRect(slotX, y + barHeight - 1, slotSize, 1);
+            stack.fillRect(slotX, y, 1, barHeight);
+        }
+
+        let brightness = this.minecraft.isPaused() ? 0.5 : 1;
 
         this.minecraft.itemRenderer.prepareRender("hotbar");
 
-        // Render items
         for (let i = 0; i < 9; i++) {
             let typeId = this.minecraft.player.inventory.getItemInSlot(i);
             if (typeId !== 0) {
                 let block = Block.getById(typeId);
-                this.minecraft.itemRenderer.renderItemInGui("hotbar", i, block, Math.floor(x + i * 20 + 11), y + 11, brightness);
+                this.minecraft.itemRenderer.renderItemInGui("hotbar", i, block, Math.floor(x + i * slotSize + slotSize / 2), y + barHeight / 2, brightness);
             }
         }
+
+        let selIdx = this.minecraft.player.inventory.selectedSlotIndex;
+        let selX = x + selIdx * slotSize - 1;
+        let selY = y - 1;
+        stack.strokeStyle = '#ffffff';
+        stack.lineWidth = 2;
+        stack.strokeRect(selX, selY, slotSize + 2, barHeight + 2);
+
+        stack.restore();
     }
 
     renderLeftDebugOverlay(stack, filters = []) {
@@ -170,7 +196,6 @@ export default class IngameOverlay extends Gui {
         let skyLight = world.getSavedLightValue(EnumSkyBlock.SKY, blockX, blockY, blockZ);
         let blockLight = world.getSavedLightValue(EnumSkyBlock.BLOCK, blockX, blockY, blockZ);
         let lightLevel = world.getTotalLightAt(blockX, blockY, blockZ);
-        let biome = "T: " + world.getTemperature(blockX, blockY, blockZ) + " H: " + world.getHumidity(blockX, blockY, blockZ);
 
         let soundsLoaded = 0;
         let soundsPlaying = 0;
@@ -178,7 +203,6 @@ export default class IngameOverlay extends Gui {
         for (let [id, sounds] of Object.entries(soundPool)) {
             for (let sound of sounds) {
                 soundsLoaded++;
-
                 if (sound.isPlaying) {
                     soundsPlaying++;
                 }
@@ -198,26 +222,22 @@ export default class IngameOverlay extends Gui {
             "Chunk: " + chunkX + " " + chunkY + " " + chunkZ + " in " + inChunkX + " " + inChunkY + " " + inChunkZ,
             "Facing: " + facing.getName() + " (" + towards + ") (" + yaw.toFixed(1) + " / " + pitch.toFixed(1) + ")",
             "Light: " + lightLevel + " (" + skyLight + " sky, " + blockLight + " block)",
-            // "Biome: " + biome,
             "",
             "Sounds: " + soundsPlaying + "/" + soundsLoaded,
             "Time: " + world.time % 24000 + " (Day " + Math.floor(world.time / 24000) + ")",
             "Cursor: " + this.minecraft.window.focusState.getName()
         ]
 
-        // Hit result
         let hit = worldRenderer.lastHitResult;
         if (hit !== null && hit.type !== 0) {
             lines.push("Looking at: " + hit.x + " " + hit.y + " " + hit.z);
         }
 
-        // Draw lines
         for (let i = 0; i < lines.length; i++) {
             if (lines[i].length === 0 || filters.length !== 0 && !filters.includes(i)) {
                 continue;
             }
 
-            // Clear the line
             if (filters.length !== 0) {
                 stack.clearRect(
                     1,
@@ -227,7 +247,6 @@ export default class IngameOverlay extends Gui {
                 );
             }
 
-            // Draw background
             this.drawRect(stack,
                 1,
                 1 + FontRenderer.FONT_HEIGHT * i,
@@ -236,7 +255,6 @@ export default class IngameOverlay extends Gui {
                 '#50505090'
             );
 
-            // Draw line
             this.drawString(stack, lines[i], 2, 2 + FontRenderer.FONT_HEIGHT * i, 0xffe0e0e0, false);
         }
 
@@ -261,13 +279,11 @@ export default class IngameOverlay extends Gui {
             this.window.getGPUName()
         ];
 
-        // Draw lines
         for (let i = 0; i < lines.length; i++) {
             if (lines[i].length === 0) {
                 continue;
             }
 
-            // Draw background
             this.drawRect(stack,
                 this.window.width - this.getStringWidth(stack, lines[i]) - 3,
                 1 + FontRenderer.FONT_HEIGHT * i,
@@ -276,7 +292,6 @@ export default class IngameOverlay extends Gui {
                 '#50505090'
             );
 
-            // Draw line
             this.drawRightString(stack, lines[i], this.window.width - 2, 2 + FontRenderer.FONT_HEIGHT * i, 0xffe0e0e0, false);
         }
     }

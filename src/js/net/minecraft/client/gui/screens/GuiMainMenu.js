@@ -47,7 +47,6 @@ export default class GuiMainMenu extends GuiScreen {
         let rotationX = Math.sin((this.panoramaTimer + partialTicks) / 400.0) * 25.0 + 20.0;
         let rotationY = -(this.panoramaTimer + partialTicks) * 0.1;
 
-        // Draw panorama
         this.camera.aspect = this.width / this.height;
         this.camera.rotation.x = -MathHelper.toRadians(rotationX + 180);
         this.camera.rotation.y = -MathHelper.toRadians(rotationY - 180);
@@ -55,20 +54,15 @@ export default class GuiMainMenu extends GuiScreen {
         this.minecraft.worldRenderer.webRenderer.clear();
         this.minecraft.worldRenderer.webRenderer.render(this.scene, this.camera);
 
-        // Draw panorama overlay
         this.drawGradientRect(stack, 0, 0, this.width, this.height, 'rgba(255,255,255,0.5)', 'rgb(255,255,255,0)');
         this.drawGradientRect(stack, 0, 0, this.width, this.height, 'rgb(0,0,0,0)', 'rgb(0,0,0,0.5)');
 
-        // Draw logo
         this.drawLogo(stack, x, y);
 
-        // Draw version
         this.drawString(stack, "SlopCraft " + Minecraft.VERSION, 2, this.height - 10, 0xFFFFFFff);
 
-        // Draw buttons
         super.drawScreen(stack, mouseX, mouseY, partialTicks);
 
-        // Draw splash text
         this.drawSplash(stack);
     }
 
@@ -77,8 +71,22 @@ export default class GuiMainMenu extends GuiScreen {
     }
 
     drawLogo(stack, x, y) {
-        this.drawSprite(stack, this.textureLogo, 0, 0, 155, 44, x, y, 155, 44);
-        this.drawSprite(stack, this.textureLogo, 0, 45, 155, 44, x + 155, y, 155, 44);
+        if (this.textureLogo) {
+            this.drawSprite(stack, this.textureLogo, 0, 0, 274, 89, x, y, 274, 89);
+        } else {
+            stack.save();
+            stack.fillStyle = '#ffffff';
+            stack.font = 'bold 40px "Arial Black", sans-serif';
+            stack.textAlign = 'left';
+            stack.textBaseline = 'top';
+            stack.shadowColor = '#3f3f3f';
+            stack.shadowOffsetX = 3;
+            stack.shadowOffsetY = 3;
+            stack.fillText('SlopCraft', x + 10, y + 5);
+            stack.shadowColor = 'transparent';
+            stack.fillText('SlopCraft', x + 8, y + 3);
+            stack.restore();
+        }
     }
 
     drawSplash(stack) {
@@ -94,7 +102,7 @@ export default class GuiMainMenu extends GuiScreen {
     }
 
     keyTyped(key) {
-        // Cancel key inputs
+
     }
 
     mouseClicked(mouseX, mouseY, mouseButton) {
@@ -104,7 +112,6 @@ export default class GuiMainMenu extends GuiScreen {
     initPanoramaRenderer() {
         this.scene = new THREE.Scene();
 
-        // Create cube
         let geometry = new THREE.BoxBufferGeometry(1, 1, 1);
         let materials = [
             new THREE.MeshBasicMaterial({
@@ -145,7 +152,6 @@ export default class GuiMainMenu extends GuiScreen {
         this.camera = new THREE.PerspectiveCamera(120, 1, 0.1, 1);
         this.camera.rotation.order = 'ZYX';
 
-        // Apply blur
         let style = this.minecraft.window.canvas.style;
         style.backdropFilter = "blur(10px)";
         style.webkitBackdropFilter = "blur(10px)";
@@ -153,7 +159,6 @@ export default class GuiMainMenu extends GuiScreen {
     }
 
     onClose() {
-        // Remove blur
         let style = this.minecraft.window.canvas.style;
         style.backdropFilter = "";
         style.webkitBackdropFilter = "";

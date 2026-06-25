@@ -517,13 +517,19 @@ export default class Minecraft {
             return;
         }
 
-        let image = this.resources[id];
+        let resource = this.resources[id];
+
+        if (resource instanceof HTMLCanvasElement) {
+            let tex = new THREE.CanvasTexture(resource);
+            return tex;
+        }
+
         let canvas = document.createElement('canvas');
         let context = canvas.getContext("2d");
-        canvas.width = image.width;
-        canvas.height = image.height;
+        canvas.width = resource.width;
+        canvas.height = resource.height;
         context.imageSmoothingEnabled = false;
-        context.drawImage(image, 0, 0, image.width, image.height);
+        context.drawImage(resource, 0, 0, resource.width, resource.height);
         return new THREE.CanvasTexture(canvas);
     }
 }
