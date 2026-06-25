@@ -1,5 +1,4 @@
 import Minecraft from './net/minecraft/client/Minecraft.js';
-import * as aesjs from '../../libraries/aes.js';
 
 class Start {
 
